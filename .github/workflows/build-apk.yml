@@ -52,21 +52,17 @@ jobs:
         run: |
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          # Add cmdline-tools to PATH (try common locations)
           if [ -d /usr/local/lib/android/sdk/cmdline-tools/latest/bin ]; then
             echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           elif [ -d /usr/local/lib/android/sdk/cmdline-tools/bin ]; then
             echo "/usr/local/lib/android/sdk/cmdline-tools/bin" >> $GITHUB_PATH
           else
-            # Find any cmdline-tools bin
             CT=$(find /usr/local/lib/android/sdk/cmdline-tools -type d -name bin 2>/dev/null | head -1)
             if [ -n "$CT" ]; then
               echo "$CT" >> $GITHUB_PATH
             fi
           fi
           echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
-          echo "=== PATH setup done ==="
-          ls -la /usr/local/lib/android/sdk/cmdline-tools/ || true
 
       - name: Install required Android SDK packages
         run: |
@@ -81,4 +77,26 @@ jobs:
           set -e
           curl -fsSL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle-8.2-bin.zip
           unzip -q /tmp/gradle-8.2-bin.zip -d /opt
-          echo
+          echo "/opt/gradle-8.2/bin" >> $GITHUB_PATH
+          /opt/gradle-8.2/bin/gradle --version
+
+      - name: Build Debug APK
+        run: |
+          set -e
+          gradle assembleDebug --stacktrace --no-daemon 2>&1 | tee build.log
+          find app/build/outputs -name "*.apk" -ls || true
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DualAudioRouter-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload build log (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
