@@ -10,27 +10,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # Tell the runner to execute all commands inside your inner folder
-    defaults:
-      run:
-        working-directory: DualAudioRouter
-
     steps:
+    # 1. First, check out the target repo so the folders actually exist
     - uses: actions/checkout@v4
 
+    # 2. Initialize your Java Environment safely at the root level
     - name: set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-        # We handle caching manually or skip it here to bypass the root check
-        
+
+    # 3. Explicitly execute all Gradle wrapper bindings inside your inner folder
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+      working-directory: DualAudioRouter
 
-    - name: Build with Gradle
+    - name: Build Debug App Variant
       run: ./gradlew assembleDebug
+      working-directory: DualAudioRouter
 
+    # 4. Map the path structure directly to retrieve the assembled bundle package
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
